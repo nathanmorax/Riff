@@ -210,46 +210,6 @@ final class TimedMetadataReader: NSObject, AVPlayerItemMetadataOutputPushDelegat
     }
 }
 
-// MARK: - Menu bar animation
-
-/// Animaciones para la barra de menú. La etiqueta de un `MenuBarExtra` no anima
-/// con SwiftUI, así que cada estilo devuelve un texto distinto según el `tick`
-/// (que avanza cada 150 ms) y la vista se vuelve a dibujar cuadro por cuadro.
-enum MenuBarAnimation {
-    case equalizer   // ▂▅▇▅
-    case dancer      // 🕺 💃
-    case disco       // 🕺 🪩 💃 🪩
-    case kaomoji     // ┏(・o･)┛♪ ┗(・o･)┓♪
-
-    func frame(at tick: Int) -> String {
-        switch self {
-
-        case .equalizer:
-            let levels = Array("▁▂▃▄▅▆▇█")
-            let pattern = [1, 3, 5, 7, 5, 3]
-
-            // Cuatro barras que suben y bajan desfasadas.
-            return String((0..<4).map { bar in
-                levels[pattern[(tick + bar * 5) % pattern.count]]
-            })
-
-        case .dancer:
-            return Self.cycle(["🕺", "💃"], tick: tick, every: 3)
-
-        case .disco:
-            return Self.cycle(["🕺", "🪩", "💃", "🪩"], tick: tick, every: 3)
-
-        case .kaomoji:
-            return Self.cycle(["┏(・o･)┛♪", "┗(・o･)┓♪"], tick: tick, every: 3)
-        }
-    }
-
-    /// Cambia de cuadro cada `every` ticks (3 ticks = 450 ms).
-    private static func cycle(_ frames: [String], tick: Int, every: Int) -> String {
-        frames[(tick / every) % frames.count]
-    }
-}
-
 // MARK: - Player
 
 @MainActor
@@ -261,16 +221,12 @@ final class RadioPlayer {
     private(set) var isPlaying = false
     private(set) var isLoading = false
 
-    /// Contador que avanza cada 150 ms mientras suena algo; mueve la animación y la marquesina.
-    private(set) var animationFrame = 0
-
     @ObservationIgnored private let player = AVPlayer()
     @ObservationIgnored private var metadataReader: TimedMetadataReader?
 
     // `nonisolated(unsafe)` para poder cancelarlos desde deinit. Solo se escriben en el MainActor.
     @ObservationIgnored nonisolated(unsafe) private var statusTask: Task<Void, Never>?
     @ObservationIgnored nonisolated(unsafe) private var metadataTask: Task<Void, Never>?
-    @ObservationIgnored nonisolated(unsafe) private var tickerTask: Task<Void, Never>?
 
     init() {
         let stream = player.timeControlStatusStream
@@ -280,12 +236,6 @@ final class RadioPlayer {
                 guard let self else { return }
                 self.isPlaying = (status == .playing)
                 self.isLoading = (status == .waitingToPlayAtSpecifiedRate)
-
-                if self.isPlaying {
-                    self.startTicker()
-                } else {
-                    self.stopTicker()
-                }
             }
         }
     }
@@ -293,51 +243,6 @@ final class RadioPlayer {
     deinit {
         statusTask?.cancel()
         metadataTask?.cancel()
-        tickerTask?.cancel()
-    }
-
-    // MARK: Menu bar
-
-    /// Cambia esta línea para elegir la animación: .equalizer, .dancer, .disco o .kaomoji
-    private static let animation: MenuBarAnimation = .equalizer
-
-    private static let visibleWidth = 22 // caracteres visibles del texto; ajústalo a tu gusto
-
-    /// Texto completo para la barra de menú: animación + título (o nombre de la estación) con marquesina.
-    var menuBarText: String {
-        let title = nowPlaying ?? currentStation?.displayName ?? ""
-        let scrolling = Self.marquee(title, step: 5, width: Self.visibleWidth)
-        return "\(Self.animation.frame(at: animationFrame)) \(scrolling)"
-    }
-
-    /// Si el texto cabe, lo devuelve tal cual; si no, devuelve una ventana que se desplaza en bucle.
-    private static func marquee(_ text: String, step: Int, width: Int) -> String {
-        let chars = Array(text)
-        guard chars.count > width else { return text }
-
-        let looped = chars + Array("   •   ")
-        let start = step % looped.count
-
-        return String((0..<width).map { looped[(start + $0) % looped.count] })
-    }
-
-    // MARK: Ticker
-
-    private func startTicker() {
-        guard tickerTask == nil else { return }
-
-        tickerTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(150))
-                guard !Task.isCancelled, let self else { return }
-                self.animationFrame &+= 1
-            }
-        }
-    }
-
-    private func stopTicker() {
-        tickerTask?.cancel()
-        tickerTask = nil
     }
 
     // MARK: Control
@@ -365,7 +270,6 @@ final class RadioPlayer {
 
         currentStation = station
         nowPlaying = nil
-        animationFrame = 0
 
         let item = AVPlayerItem(url: url)
 
@@ -403,7 +307,6 @@ final class RadioPlayer {
         guard raw != nowPlaying else { return }
 
         nowPlaying = raw
-        animationFrame = 0 // la marquesina empieza desde el principio
 
         // Muchas radios mandan "Artista - Canción" en un solo string.
         let parts = raw.components(separatedBy: " - ")
@@ -431,64 +334,13 @@ struct ContentView1: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
 
-//            Text("Radio")
-//                .foregroundStyle(.secondary)
-
             TextField("Buscar estación o género…", text: $query)
                 .textFieldStyle(.roundedBorder)
 
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 0) {
-
                     ForEach(stations) { station in
-
-                        Button {
-                            radio.toggle(station)
-                        } label: {
-                            HStack(spacing: 10) {
-
-                                AsyncImage(url: station.faviconURL) { image in
-                                    image
-                                        .resizable()
-                                        .scaledToFit()
-                                } placeholder: {
-                                    Image(systemName: "radio")
-                                        .foregroundStyle(.secondary)
-                                }
-                                .frame(width: 24, height: 24)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(station.displayName)
-                                        .lineLimit(1)
-                                        .foregroundStyle(radio.isCurrent(station) ? Color.accentColor : .primary)
-
-                                    if radio.isCurrent(station), let title = radio.nowPlaying {
-                                        Text(title)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                    }
-                                }
-
-                                Spacer(minLength: 0)
-
-                                if radio.isCurrent(station) {
-                                    if radio.isLoading {
-                                        ProgressView()
-                                            .controlSize(.small)
-                                    } else if radio.isPlaying {
-                                        Image(systemName: "speaker.wave.2.fill")
-                                            .foregroundStyle(Color.accentColor)
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 8)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .help(station.name)
-
+                        StationRow(station: station, radio: radio)
                         Divider()
                     }
                 }
@@ -504,18 +356,17 @@ struct ContentView1: View {
                     }
                 }
             }
-            
-            
+
             HStack {
-                
                 Spacer()
+
                 Button {
                     NSApplication.shared.terminate(nil)
                 } label: {
                     Image(systemName: "power")
-
                 }
-
+                .buttonStyle(.borderless)
+                .help("Salir de Riff")
             }
         }
         .padding()
@@ -551,5 +402,71 @@ struct ContentView1: View {
         }
 
         isSearching = false
+    }
+}
+
+// MARK: - Row
+
+private struct StationRow: View {
+
+    let station: Station
+    let radio: RadioPlayer
+
+    private var isCurrent: Bool {
+        radio.isCurrent(station)
+    }
+
+    var body: some View {
+        Button {
+            radio.toggle(station)
+        } label: {
+            HStack(spacing: 10) {
+
+                AsyncImage(url: station.faviconURL) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                } placeholder: {
+                    Image(systemName: "radio")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(width: 24, height: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(station.displayName)
+                        .lineLimit(1)
+                        .foregroundStyle(isCurrent ? Color.accentColor : .primary)
+
+                    if isCurrent, let title = radio.nowPlaying {
+                        Text(title)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                if isCurrent {
+                    playbackIndicator
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(station.name) // nombre completo al pasar el mouse
+    }
+
+    @ViewBuilder
+    private var playbackIndicator: some View {
+        if radio.isLoading {
+            ProgressView()
+                .controlSize(.small)
+        } else if radio.isPlaying {
+            Image(systemName: "speaker.wave.2.fill")
+                .foregroundStyle(Color.accentColor)
+        }
     }
 }
