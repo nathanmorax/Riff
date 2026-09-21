@@ -44,6 +44,16 @@ struct Station: Codable, Identifiable {
         return clean.count >= 2 ? clean : trimmed
     }
 
+    /// Primeros géneros de la estación: "pop · rock · mexicana".
+    var genres: String {
+        tags
+            .split(separator: ",")
+            .prefix(3)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+    }
+
     /// Muchos favicons vienen por http://, que App Transport Security bloquea.
     /// Probamos con https://; si el servidor no lo soporta, se queda el placeholder.
     var faviconURL: URL? {
@@ -210,25 +220,94 @@ final class TimedMetadataReader: NSObject, AVPlayerItemMetadataOutputPushDelegat
     }
 }
 
+// MARK: - Marquee
+
+enum Marquee {
+
+    /// Si el texto cabe, lo devuelve tal cual; si no, una ventana de `width`
+    /// caracteres que se desplaza en bucle.
+    static func window(of text: String, step: Int, width: Int) -> String {
+        let chars = Array(text)
+        guard chars.count > width else { return text }
+
+        let looped = chars + Array("   •   ")
+        let start = step % looped.count
+
+        return String((0..<width).map { looped[(start + $0) % looped.count] })
+    }
+}
+
+/// Reloj que incrementa `frame` cada cierto intervalo mientras está activo.
+@MainActor
+@Observable
+final class FrameTicker {
+
+    private(set) var frame = 0
+
+    // `nonisolated(unsafe)` para poder cancelarlo desde deinit. Solo se escribe en el MainActor.
+    @ObservationIgnored nonisolated(unsafe) private var task: Task<Void, Never>?
+
+    deinit {
+        task?.cancel()
+    }
+
+    func start(every interval: Duration = .milliseconds(150)) {
+        guard task == nil else { return }
+
+        task = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: interval)
+                guard !Task.isCancelled, let self else { return }
+                self.frame &+= 1
+            }
+        }
+    }
+
+    func stop() {
+        task?.cancel()
+        task = nil
+    }
+
+    func reset() {
+        frame = 0
+    }
+}
+
 // MARK: - Player
 
 @MainActor
 @Observable
 final class RadioPlayer {
 
+    /// Estación seleccionada: la que suena o la última que se escuchó.
+    /// Se recuerda entre lanzamientos; es `nil` solo la primera vez.
     private(set) var currentStation: Station?
     private(set) var nowPlaying: String?
     private(set) var isPlaying = false
     private(set) var isLoading = false
 
+    /// Sonando o conectando.
+    var isActive: Bool {
+        isPlaying || isLoading
+    }
+
+    /// Reloj de la marquesina; solo corre cuando el texto no cabe en la barra de menú.
+    let ticker = FrameTicker()
+
     @ObservationIgnored private let player = AVPlayer()
+    @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var metadataReader: TimedMetadataReader?
 
     // `nonisolated(unsafe)` para poder cancelarlos desde deinit. Solo se escriben en el MainActor.
     @ObservationIgnored nonisolated(unsafe) private var statusTask: Task<Void, Never>?
     @ObservationIgnored nonisolated(unsafe) private var metadataTask: Task<Void, Never>?
 
-    init() {
+    private static let lastStationKey = "lastStation"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        self.currentStation = Self.loadLastStation(from: defaults)
+
         let stream = player.timeControlStatusStream
 
         statusTask = Task { [weak self] in
@@ -236,6 +315,7 @@ final class RadioPlayer {
                 guard let self else { return }
                 self.isPlaying = (status == .playing)
                 self.isLoading = (status == .waitingToPlayAtSpecifiedRate)
+                self.updateTicker()
             }
         }
     }
@@ -245,22 +325,41 @@ final class RadioPlayer {
         metadataTask?.cancel()
     }
 
-    // MARK: Control
+    // MARK: Menu bar
 
-    /// Si tocas la estación que está sonando, se detiene. Si tocas otra, cambia.
-    func toggle(_ station: Station) {
-        if currentStation?.id == station.id && (isPlaying || isLoading) {
-            stop()
+    /// Caracteres visibles del texto en la barra de menú; si no caben, se desplaza.
+    static let menuBarWidth = 24
+
+    /// Título de la canción o, si la estación no lo manda, el nombre de la estación.
+    private var menuBarTitle: String {
+        nowPlaying ?? currentStation?.displayName ?? ""
+    }
+
+    /// Ventana visible del título; se desplaza cuando es más largo que `menuBarWidth`.
+    var menuBarText: String {
+        Marquee.window(of: menuBarTitle, step: ticker.frame / 2, width: Self.menuBarWidth)
+    }
+
+    /// El reloj solo corre si suena algo y el texto no cabe.
+    private func updateTicker() {
+        if isPlaying, menuBarTitle.count > Self.menuBarWidth {
+            ticker.start()
         } else {
-            play(station)
+            ticker.stop()
+            ticker.reset()
         }
     }
 
-    func isCurrent(_ station: Station) -> Bool {
-        currentStation?.id == station.id
+    // MARK: Control
+
+    /// Reanuda la estación seleccionada (la última que se escuchó).
+    func play() {
+        guard let station = currentStation, !isActive else { return }
+        play(station)
     }
 
-    private func play(_ station: Station) {
+    /// Reproduce `station` y la recuerda como última estación.
+    func play(_ station: Station) {
         guard let url = URL(string: station.urlResolved) else {
             print("[Riff] ❌ URL inválida: \(station.urlResolved)")
             return
@@ -269,7 +368,10 @@ final class RadioPlayer {
         print("[Riff] ▶️ Reproduciendo: \(station.displayName)")
 
         currentStation = station
+        save(station)
         nowPlaying = nil
+        ticker.reset()
+        updateTicker()
 
         let item = AVPlayerItem(url: url)
 
@@ -290,7 +392,8 @@ final class RadioPlayer {
         player.play()
     }
 
-    private func stop() {
+    /// Detiene la reproducción. La estación sigue seleccionada para poder reanudarla.
+    func stop() {
         player.pause()
         player.replaceCurrentItem(with: nil)
 
@@ -298,7 +401,6 @@ final class RadioPlayer {
         metadataTask = nil
         metadataReader = nil
 
-        currentStation = nil
         nowPlaying = nil
     }
 
@@ -307,6 +409,8 @@ final class RadioPlayer {
         guard raw != nowPlaying else { return }
 
         nowPlaying = raw
+        ticker.reset() // la marquesina empieza desde el principio
+        updateTicker()
 
         // Muchas radios mandan "Artista - Canción" en un solo string.
         let parts = raw.components(separatedBy: " - ")
@@ -315,158 +419,16 @@ final class RadioPlayer {
 
         print("[Riff] 🎧 Estación: \(currentStation?.displayName ?? "—") | Artista: \(artist) | Canción: \(song)")
     }
-}
 
-// MARK: - View
+    // MARK: Persistencia
 
-struct ContentView1: View {
-
-    let radio: RadioPlayer
-
-    @State private var stations: [Station] = []
-    @State private var isSearching = false
-    @State private var query = ""
-
-    private var trimmedQuery: String {
-        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func save(_ station: Station) {
+        guard let data = try? JSONEncoder().encode(station) else { return }
+        defaults.set(data, forKey: Self.lastStationKey)
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-
-            TextField("Buscar estación o género…", text: $query)
-                .textFieldStyle(.roundedBorder)
-
-            ScrollView(showsIndicators: false) {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(stations) { station in
-                        StationRow(station: station, radio: radio)
-                        Divider()
-                    }
-                }
-            }
-            .overlay {
-                if stations.isEmpty {
-                    if isSearching {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Text("Sin resultados")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            HStack {
-                Spacer()
-
-                Button {
-                    NSApplication.shared.terminate(nil)
-                } label: {
-                    Image(systemName: "power")
-                }
-                .buttonStyle(.borderless)
-                .help("Salir de Riff")
-            }
-        }
-        .padding()
-        .frame(width: 280, height: 330)
-        .task(id: trimmedQuery) {
-            await search(trimmedQuery)
-        }
-    }
-
-    // MARK: - Search
-
-    private func search(_ query: String) async {
-        isSearching = true
-
-        // Debounce: si el usuario sigue escribiendo, SwiftUI cancela este task
-        // y arranca otro, así que el sleep se interrumpe y no llega la petición.
-        if !query.isEmpty {
-            try? await Task.sleep(for: .milliseconds(400))
-            guard !Task.isCancelled else { return }
-        }
-
-        do {
-            let result = try await RadioAPI.stations(matching: query)
-            guard !Task.isCancelled else { return }
-            stations = result
-        } catch is CancellationError {
-            return
-        } catch let error as URLError where error.code == .cancelled {
-            return
-        } catch {
-            print("[Riff] ❌ Error de búsqueda: \(error)")
-            stations = []
-        }
-
-        isSearching = false
-    }
-}
-
-// MARK: - Row
-
-private struct StationRow: View {
-
-    let station: Station
-    let radio: RadioPlayer
-
-    private var isCurrent: Bool {
-        radio.isCurrent(station)
-    }
-
-    var body: some View {
-        Button {
-            radio.toggle(station)
-        } label: {
-            HStack(spacing: 10) {
-
-                AsyncImage(url: station.faviconURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFit()
-                } placeholder: {
-                    Image(systemName: "radio")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(width: 24, height: 24)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(station.displayName)
-                        .lineLimit(1)
-                        .foregroundStyle(isCurrent ? Color.accentColor : .primary)
-
-                    if isCurrent, let title = radio.nowPlaying {
-                        Text(title)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-
-                Spacer(minLength: 0)
-
-                if isCurrent {
-                    playbackIndicator
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help(station.name) // nombre completo al pasar el mouse
-    }
-
-    @ViewBuilder
-    private var playbackIndicator: some View {
-        if radio.isLoading {
-            ProgressView()
-                .controlSize(.small)
-        } else if radio.isPlaying {
-            Image(systemName: "speaker.wave.2.fill")
-                .foregroundStyle(Color.accentColor)
-        }
+    private static func loadLastStation(from defaults: UserDefaults) -> Station? {
+        guard let data = defaults.data(forKey: lastStationKey) else { return nil }
+        return try? JSONDecoder().decode(Station.self, from: data)
     }
 }
