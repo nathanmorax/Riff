@@ -6,13 +6,12 @@
 //
 import SwiftUI
 
-// MARK: - Mini reproductor (popover)
+// MARK: - Mini reproductor
 
 struct PlayerView: View {
 
     let radio: RadioPlayer
-
-    @Environment(\.openWindow) private var openWindow
+    let onSearch: () -> Void
 
     var body: some View {
         VStack(spacing: 12) {
@@ -22,11 +21,11 @@ struct PlayerView: View {
             } else {
                 emptyState
             }
-
-            footer
+            
+//            footer
         }
         .padding(14)
-        .frame(width: 280)
+        .background(Color.themeBackground)
     }
 
     // MARK: Con estación
@@ -53,7 +52,7 @@ struct PlayerView: View {
 
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(radio.hasFailed ? .red : .colorLabel)
                     .lineLimit(1)
             }
 
@@ -62,72 +61,111 @@ struct PlayerView: View {
     }
 
     private var subtitle: String {
-        if radio.isLoading { return "Conectando…" }
-        if radio.isPlaying { return radio.nowPlaying ?? "En vivo" }
-        return "Detenida"
+        if radio.hasFailed { return "No se pudo conectar" }
+        if radio.isLoading { return "Connecting…" }
+        if radio.isPlaying { return radio.nowPlaying ?? "LIVE" }
+        return "Paused"
     }
 
     private var controls: some View {
-        HStack(spacing: 14) {
-            Button {
-                radio.play()
-            } label: {
-                Image(systemName: "play.fill")
+        Button {
+            radio.isActive ? radio.stop() : radio.play()
+        } label: {
+            Group {
+                if radio.isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(.white)
+                } else if radio.isPlaying {
+                    Image(systemName: "stop.fill")
+                } else {
+                    Image(systemName: "play.fill")
+                }
             }
-            .buttonStyle(RoundButtonStyle(prominent: true))
-            .disabled(radio.isActive)
-            .help("Reproducir")
+            .frame(width: 18, height: 18) // mismo tamaño en los 3 estados, para que el botón no cambie de forma
+        }
+        .buttonStyle(PlayStopButtonStyle())
+        .help(radio.hasFailed ? "Reintentar" : radio.isActive ? "Detener" : "Reproducir")
+    }
+    
+    /// Botón circular de 44 pt, único, que alterna entre Play, cargando y Stop.
+    private struct PlayStopButtonStyle: ButtonStyle {
 
-            Button {
-                radio.stop()
-            } label: {
-                Image(systemName: "stop.fill")
-            }
-            .buttonStyle(RoundButtonStyle())
-            .disabled(!radio.isActive)
-            .help("Detener")
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .font(.system(size: 18, weight: .semibold))
+                .frame(width: 44, height: 44)
+                .foregroundStyle(.white)
+                .background(Color.colorGray, in: Circle())
+                .opacity(configuration.isPressed ? 0.7 : 1)
         }
     }
 
     // MARK: Primera vez (sin estación)
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "dot.radiowaves.left.and.right")
-                .font(.system(size: 30))
-                .foregroundStyle(.secondary)
+        VStack(spacing: 18) {
+//            HStack {
+//                Circle()
+//                    .strokeBorder(
+//                        AngularGradient(
+//                            colors: [.orange, .red, .orange],
+//                            center: .center
+//                        ),
+//                        lineWidth: 3
+//                    )
+//                    .frame(width: 30, height: 30)
+//                Spacer()
+//            }
 
-            Text("Elige una estación")
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Sintoniza")
+                Text("algo nuevo.")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.system(size: 28, weight: .heavy, design: .default))
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Busca por nombre o género para empezar a escuchar.")
-                .font(.caption)
+            Text("Busca por nombre o género y empieza a escuchar radio en vivo.")
+                .font(.system(size: 12, weight: .heavy, design: .default))
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(2)
 
             Button {
-                openSearch()
+                onSearch()
             } label: {
-                Label("Buscar estación", systemImage: "magnifyingglass")
+                HStack {
+                    Text("Buscar estación")
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                }
+                .font(.system(size: 14, weight: .bold))
+                .padding(.vertical, 13)
+                .padding(.horizontal, 20)
             }
-            .buttonStyle(.borderedProminent)
-            .padding(.top, 4)
+            .buttonStyle(.plain)
+            .background(Color.white, in: Capsule())
+            .foregroundStyle(.black)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
+        .padding(20)
+        .background(Color.black)
     }
 
     // MARK: Pie
 
     private var footer: some View {
         HStack {
-            Button {
-                openSearch()
-            } label: {
-                Image(systemName: "magnifyingglass")
-            }
-            .buttonStyle(.borderless)
-            .help("Buscar estación")
+//            if radio.currentStation != nil {
+//                Button {
+//                    onSearch()
+//                } label: {
+//                    Image(systemName: "magnifyingglass")
+//                }
+//                .buttonStyle(.borderless)
+//                .foregroundStyle(.white)
+//                .help("Buscar estación")
+//            }
 
             Spacer()
 
@@ -142,6 +180,17 @@ struct PlayerView: View {
             }
             .buttonStyle(.borderless)
             .help("Salir de Riff")
+            
+            Menu {
+                Button("Olvidar estación", role: .destructive) {
+                    radio.forgetStation()
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .frame(width: 20)
+            .help("Más opciones")
         }
         .padding(.top, 8)
         .overlay(alignment: .top) {
@@ -151,10 +200,12 @@ struct PlayerView: View {
 
     @ViewBuilder
     private var statusBadge: some View {
-        if radio.isPlaying {
-            badge("EN VIVO", color: .red)
+        if radio.hasFailed {
+            badge("CONNECTION FAILED", color: .red)
+        } else if radio.isPlaying {
+            badge("LIVE", color: .red)
         } else if radio.isLoading {
-            badge("CONECTANDO", color: .orange)
+            badge("Connecting..", color: .orange)
         }
     }
 
@@ -170,11 +221,6 @@ struct PlayerView: View {
         }
         .foregroundStyle(color)
     }
-
-    private func openSearch() {
-        openWindow(id: "search")
-        NSApp.activate()
-    }
 }
 
 /// Botón circular de 44 pt para Play y Stop.
@@ -189,7 +235,7 @@ private struct RoundButtonStyle: ButtonStyle {
             .font(.system(size: 18, weight: .semibold))
             .frame(width: 44, height: 44)
             .foregroundStyle(prominent ? Color.white : Color.primary)
-            .background(prominent ? Color.accentColor : Color.primary.opacity(0.10), in: Circle())
+            .background(prominent ? Color.colorGray : Color.colorGray, in: Circle())
             .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.35)
     }
 }

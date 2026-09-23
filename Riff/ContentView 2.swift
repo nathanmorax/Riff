@@ -285,6 +285,8 @@ final class RadioPlayer {
     private(set) var nowPlaying: String?
     private(set) var isPlaying = false
     private(set) var isLoading = false
+    
+    private(set) var hasFailed = false
 
     /// Sonando o conectando.
     var isActive: Bool {
@@ -421,6 +423,12 @@ final class RadioPlayer {
     }
 
     // MARK: Persistencia
+    
+    func forgetStation() {
+        stop()
+        currentStation = nil
+        defaults.removeObject(forKey: Self.lastStationKey)
+    }
 
     private func save(_ station: Station) {
         guard let data = try? JSONEncoder().encode(station) else { return }

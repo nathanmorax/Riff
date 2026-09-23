@@ -6,13 +6,13 @@
 //
 import SwiftUI
 
-// MARK: - Búsqueda (ventana flotante)
+// MARK: - Búsqueda (dentro del popover)
 
 struct SearchView: View {
 
     let radio: RadioPlayer
+    let onClose: () -> Void
 
-    @Environment(\.dismissWindow) private var dismissWindow
     @FocusState private var fieldFocused: Bool
 
     @State private var stations: [Station] = []
@@ -32,8 +32,8 @@ struct SearchView: View {
             Divider()
             hints
         }
-        .frame(width: 360, height: 440)
-        .background(SearchWindowConfigurator { close() })
+        .frame(height: 380)
+        .background(Color.themeBackground)
         .task(id: trimmedQuery) {
             await search(trimmedQuery)
         }
@@ -41,7 +41,7 @@ struct SearchView: View {
             fieldFocused = true
         }
         .onExitCommand {
-            close()
+            onClose() // esc regresa al reproductor, no cierra el popover
         }
     }
 
@@ -49,10 +49,19 @@ struct SearchView: View {
 
     private var searchField: some View {
         HStack(spacing: 8) {
+            Button {
+                onClose()
+            } label: {
+                Image(systemName: "chevron.left")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Volver")
+
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
 
-            TextField("Nombre o género…", text: $query)
+            TextField("Station or genre…", text: $query)
                 .textFieldStyle(.plain)
                 .font(.title3)
                 .focused($fieldFocused)
@@ -109,7 +118,7 @@ struct SearchView: View {
         HStack(spacing: 14) {
             Text("↑↓ navegar")
             Text("↵ reproducir")
-            Text("esc cerrar")
+            Text("esc volver")
         }
         .font(.caption2)
         .foregroundStyle(.secondary)
@@ -135,11 +144,7 @@ struct SearchView: View {
 
     private func choose(_ station: Station) {
         radio.play(station)
-        close()
-    }
-
-    private func close() {
-        dismissWindow(id: "search")
+        onClose()
     }
 
     // MARK: Búsqueda
