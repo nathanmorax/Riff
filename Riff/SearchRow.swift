@@ -1,9 +1,3 @@
-//
-//  SearchRow.swift
-//  Riff
-//
-//  Created by Satori Tech 341 on 21/09/26.
-//
 import SwiftUI
 
 struct SearchRow: View {
@@ -19,7 +13,7 @@ struct SearchRow: View {
                     .scaledToFit()
             } placeholder: {
                 Image(systemName: "radio")
-                    .foregroundStyle(isSelected ? Color.white.opacity(0.8) : Color.secondary)
+                    .foregroundStyle(isSelected ? Color.white.opacity(0.8) : Color.colorGray)
             }
             .frame(width: 32, height: 32)
             .clipShape(RoundedRectangle(cornerRadius: 7))
