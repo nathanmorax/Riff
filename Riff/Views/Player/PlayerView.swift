@@ -338,19 +338,24 @@ struct PlayerView: View {
 
     // MARK: Salir
 
-    /// La app no tiene ícono en el Dock (`LSUIElement`), así que esta es la forma de cerrarla.
-    /// Discreto: gris hasta que pasas el cursor. También responde a ⌘Q.
+    /// La app no tiene ícono en el Dock (`LSUIElement`), así que esta es la forma de cerrarla:
+    /// una perilla que se gira hasta el tope. ⌘Q también funciona.
     private var quitButton: some View {
-        Button {
+        OffKnob {
             NSApplication.shared.terminate(nil)
-        } label: {
-            Image(systemName: "power")
-                .font(.system(size: 11, weight: .semibold))
         }
-        .buttonStyle(PanelIconButtonStyle())
+        .background(quitShortcut)
+    }
+
+    /// Botón invisible que solo existe para el atajo ⌘Q.
+    private var quitShortcut: some View {
+        Button("Salir de Riff") {
+            NSApplication.shared.terminate(nil)
+        }
         .keyboardShortcut("q", modifiers: .command)
-        .help("Salir de Riff")
-        .accessibilityLabel("Salir de Riff")
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
     }
 
     // MARK: Acciones
