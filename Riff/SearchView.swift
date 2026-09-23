@@ -32,7 +32,7 @@ struct SearchView: View {
             Divider()
             hints
         }
-        .frame(maxHeight: 380)
+        .frame(height: 380)
         .background(Color.themeBackground)
         .task(id: trimmedQuery) {
             await search(trimmedQuery)

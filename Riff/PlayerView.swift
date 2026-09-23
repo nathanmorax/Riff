@@ -22,7 +22,7 @@ struct PlayerView: View {
                 emptyState
             }
             
-            footer
+//            footer
         }
         .padding(14)
         .background(Color.themeBackground)
@@ -104,47 +104,68 @@ struct PlayerView: View {
     // MARK: Primera vez (sin estación)
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "dot.radiowaves.left.and.right")
-                .font(.system(size: 30))
-                .foregroundStyle(.secondary)
+        VStack(spacing: 18) {
+//            HStack {
+//                Circle()
+//                    .strokeBorder(
+//                        AngularGradient(
+//                            colors: [.orange, .red, .orange],
+//                            center: .center
+//                        ),
+//                        lineWidth: 3
+//                    )
+//                    .frame(width: 30, height: 30)
+//                Spacer()
+//            }
 
-            Text("Choose a station")
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Sintoniza")
+                Text("algo nuevo.")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.system(size: 28, weight: .heavy, design: .default))
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Search by name or genre to start listening.")
-                .font(.caption)
+            Text("Busca por nombre o género y empieza a escuchar radio en vivo.")
+                .font(.system(size: 12, weight: .heavy, design: .default))
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(2)
 
             Button {
                 onSearch()
             } label: {
-                Label("Find a station", systemImage: "magnifyingglass")
+                HStack {
+                    Text("Buscar estación")
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                }
+                .font(.system(size: 14, weight: .bold))
+                .padding(.vertical, 13)
+                .padding(.horizontal, 20)
             }
-            .buttonStyle(.borderedProminent)
-            .padding(.top, 4)
+            .buttonStyle(.plain)
+            .background(Color.white, in: Capsule())
+            .foregroundStyle(.black)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
+        .padding(20)
+        .background(Color.black)
     }
-
-    // MARK: Pie
 
     // MARK: Pie
 
     private var footer: some View {
         HStack {
-            if radio.currentStation != nil {
-                Button {
-                    onSearch()
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.white)
-                .help("Buscar estación")
-            }
+//            if radio.currentStation != nil {
+//                Button {
+//                    onSearch()
+//                } label: {
+//                    Image(systemName: "magnifyingglass")
+//                }
+//                .buttonStyle(.borderless)
+//                .foregroundStyle(.white)
+//                .help("Buscar estación")
+//            }
 
             Spacer()
 
@@ -159,11 +180,17 @@ struct PlayerView: View {
             }
             .buttonStyle(.borderless)
             .help("Salir de Riff")
-            .contextMenu {
-                Button("Olvidar estación (debug)", role: .destructive) {
+            
+            Menu {
+                Button("Olvidar estación", role: .destructive) {
                     radio.forgetStation()
                 }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
+            .menuStyle(.borderlessButton)
+            .frame(width: 20)
+            .help("Más opciones")
         }
         .padding(.top, 8)
         .overlay(alignment: .top) {
