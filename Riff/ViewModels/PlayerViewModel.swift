@@ -2,7 +2,7 @@
 //  PlayerViewModel.swift
 //  Riff
 //
-//  Created by Satori Tech 341 on 23/09/26.
+//  Created by Nathan Mora on 23/09/26.
 //
 import Foundation
 import Observation

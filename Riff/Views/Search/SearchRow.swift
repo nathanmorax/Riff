@@ -2,7 +2,7 @@
 //  SearchRow.swift
 //  Riff
 //
-//  Created by Satori Tech 341 on 21/09/26.
+//  Created by Nathan Mora on 21/09/26.
 //
 import SwiftUI
 

@@ -2,7 +2,7 @@
 //  RiffTests.swift
 //  RiffTests
 //
-//  Created by Satori Tech 341 on 16/09/26.
+//  Created by Nathan Mora on 16/09/26.
 //
 
 import XCTest

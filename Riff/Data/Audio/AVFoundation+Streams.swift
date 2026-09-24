@@ -2,7 +2,7 @@
 //  AVFoundation+Streams.swift
 //  Riff
 //
-//  Created by Satori Tech 341 on 19/09/26.
+//  Created by Nathan Mora on 19/09/26.
 //
 @preconcurrency import AVFoundation
 
