@@ -47,6 +47,12 @@ struct PillButtonStyle: ButtonStyle {
 
         @State private var isHovering = false
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.colorScheme) private var colorScheme
+
+        // Colores explícitos: `Color.primary` toma el estilo de primer plano del entorno, y como aquí
+        // el texto usa el color del fondo, la cápsula quedaba gris oscuro en modo oscuro.
+        private var fill: Color { colorScheme == .dark ? .white : .black }
+        private var text: Color { colorScheme == .dark ? .black : .white }
 
         private var scale: CGFloat {
             if configuration.isPressed { return 0.97 }
@@ -56,10 +62,10 @@ struct PillButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.themeBackground) // invertido: texto del color del fondo
+                .foregroundStyle(text)
                 .padding(.vertical, 13)
                 .padding(.horizontal, 20)
-                .background(Color.primary, in: Capsule())
+                .background(fill, in: Capsule())
                 .contentShape(Capsule())
                 .scaleEffect(reduceMotion ? 1 : scale)
                 .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isHovering)
