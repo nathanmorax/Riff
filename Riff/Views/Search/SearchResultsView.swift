@@ -164,7 +164,7 @@ struct SearchResultsView: View {
                     .font(.system(size: 10, weight: .medium))
                     .padding(.horizontal, 4)
                     .frame(minWidth: 18, minHeight: 18)
-                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
             }
             Text(label)
         }

@@ -60,7 +60,7 @@ struct SearchRow: View {
         .background {
             if isSelected {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Color.white.opacity(0.12))
+                    .fill(Color.primary.opacity(0.10))
                     .matchedGeometryEffect(id: "highlight", in: highlight)
             }
         }

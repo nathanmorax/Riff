@@ -22,9 +22,9 @@ struct CompactPlayButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
-                .background(Color.white.opacity(isHovering ? 0.2 : 0.14), in: Circle())
+                .background(Color.primary.opacity(isHovering ? 0.2 : 0.14), in: Circle())
                 .contentShape(Circle())
                 .scaleEffect(configuration.isPressed ? 0.94 : 1)
                 .animation(.easeOut(duration: 0.12), value: isHovering)
@@ -56,10 +56,10 @@ struct PillButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.black)
+                .foregroundStyle(.themeBackground) // invertido: texto del color del fondo
                 .padding(.vertical, 13)
                 .padding(.horizontal, 20)
-                .background(Color.white, in: Capsule())
+                .background(Color.primary, in: Capsule())
                 .contentShape(Capsule())
                 .scaleEffect(reduceMotion ? 1 : scale)
                 .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isHovering)
@@ -86,7 +86,7 @@ struct PanelIconButtonStyle: ButtonStyle {
             configuration.label
                 .frame(width: 24, height: 24)
                 .foregroundStyle(isHovering ? Color.primary : Color.secondary)
-                .background(Color.white.opacity(isHovering ? 0.08 : 0), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(Color.primary.opacity(isHovering ? 0.08 : 0), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .contentShape(Rectangle())
                 .opacity(configuration.isPressed ? 0.7 : 1)
                 .animation(.easeOut(duration: 0.12), value: isHovering)

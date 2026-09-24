@@ -52,7 +52,6 @@ final class SearchPanelController {
             bottomInset: bottomInset,
             content: content()
         )
-        .environment(\.colorScheme, .dark)
 
         let host = FirstMouseHostingView(rootView: AnyView(root))
         host.sizingOptions = [] // el panel define su tamaño, no el contenido
@@ -264,11 +263,11 @@ private struct FloatingPanelContainer<Content: View>: View {
             content
                 .frame(maxWidth: .infinity)
                 .frame(height: height)
-                .background(Color.black)
+                .background(.themeBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5)
+                        .strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.5)
                 )
                 .shadow(color: .black.opacity(0.4), radius: 16, y: 8)
                 // Entra deslizándose desde debajo del popover; sale igual, más rápido.

@@ -78,7 +78,7 @@ enum ScreenshotExporter {
             .clipShape(RoundedRectangle(cornerRadius: popoverRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: popoverRadius, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5)
+                    .strokeBorder(Color.primary.opacity(0.18), lineWidth: 0.5)
             )
             .environment(\.colorScheme, .dark)
     }
@@ -87,11 +87,11 @@ enum ScreenshotExporter {
     private static func panel(_ content: some View) -> some View {
         content
             .frame(width: 300, height: 360)
-            .background(Color.black)
+            .background(.themeBackground)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5)
+                    .strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.5)
             )
             .environment(\.colorScheme, .dark)
     }

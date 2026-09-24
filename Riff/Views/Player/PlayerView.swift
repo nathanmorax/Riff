@@ -39,7 +39,8 @@ struct PlayerView: View {
         .background {
             // Clic en cualquier zona vacía del popover: quita el foco del campo y cierra la búsqueda.
             // En macOS esto no pasa solo; hacer clic en algo que no acepta foco no se lo quita al TextField.
-            Color.black
+            Rectangle()
+                .fill(.themeBackground)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     fieldFocused = false
@@ -112,7 +113,7 @@ struct PlayerView: View {
                 if player.isLoading {
                     ProgressView()
                         .controlSize(.mini)
-                        .tint(.white)
+                        .tint(.primary)
                 } else if player.isPlaying {
                     Image(systemName: "stop.fill")
                 } else {
@@ -277,19 +278,19 @@ struct PlayerView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 5)
                     .frame(height: 18)
-                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
                     .transition(.opacity)
             }
         }
         .padding(.horizontal, 10)
         .frame(height: 32)
         .background(
-            Color.white.opacity(fieldFocused ? 0.12 : 0.08),
+            Color.primary.opacity(fieldFocused ? 0.12 : 0.08),
             in: RoundedRectangle(cornerRadius: 8, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.white.opacity(fieldFocused ? 0.35 : 0), lineWidth: 1.5)
+                .strokeBorder(Color.primary.opacity(fieldFocused ? 0.35 : 0), lineWidth: 1.5)
         )
         .contentShape(Rectangle())
         .simultaneousGesture(TapGesture().onEnded { openSearch() })
@@ -319,7 +320,7 @@ struct PlayerView: View {
                 Text("Sintoniza")
                 Text("algo nuevo.")
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .font(.system(size: 28, weight: .heavy, design: .default))
             .frame(maxWidth: .infinity, alignment: .leading)
 

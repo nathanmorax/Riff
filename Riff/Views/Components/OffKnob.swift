@@ -38,7 +38,7 @@ struct OffKnob: View {
             .rotationEffect(.degrees(displayAngle))
             .frame(width: 24, height: 24)
             .foregroundStyle(isActive ? Color.primary : Color.secondary)
-            .background(Color.white.opacity(isActive ? 0.08 : 0), in: Circle())
+            .background(Color.primary.opacity(isActive ? 0.08 : 0), in: Circle())
             .contentShape(Circle())
             .onHover { hovering in
                 withAnimation(.snappy(duration: 0.2)) {
@@ -119,5 +119,5 @@ struct OffKnob: View {
 #Preview {
     OffKnob { }
         .padding(40)
-        .background(Color.black)
+        .background(.themeBackground)
 }

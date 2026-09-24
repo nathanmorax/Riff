@@ -35,7 +35,7 @@ struct LiveGlobeHeader: View {
 
                     Text(state.city.name)
                         .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .id(state.city.name)
                         .transition(.opacity)
                 }
@@ -162,7 +162,7 @@ private enum GlobeModel {
             let r: CGFloat = 0.65
             ctx.fill(
                 Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
-                with: .color(.white.opacity(0.12 + p.z * 0.35))
+                with: .color(.primary.opacity(0.12 + p.z * 0.35))
             )
         }
 
@@ -174,14 +174,14 @@ private enum GlobeModel {
         let ring = 1.5 + state.pulse * 6
         ctx.stroke(
             Path(ellipseIn: CGRect(x: c.x - ring, y: c.y - ring, width: ring * 2, height: ring * 2)),
-            with: .color(.white.opacity((1 - state.pulse) * p.z)),
+            with: .color(.primary.opacity((1 - state.pulse) * p.z)),
             lineWidth: 0.75
         )
 
         let r: CGFloat = 1.6
         ctx.fill(
             Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
-            with: .color(.white)
+            with: .color(.primary)
         )
     }
 }
@@ -190,5 +190,5 @@ private enum GlobeModel {
     LiveGlobeHeader()
         .padding(20)
         .frame(width: 300)
-        .background(Color.black)
+        .background(.themeBackground)
 }
