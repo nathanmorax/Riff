@@ -54,7 +54,7 @@ final class SearchPanelController {
         )
         .environment(\.colorScheme, .dark)
 
-        let host = FirstMouseHostingView(rootView: root)
+        let host = FirstMouseHostingView(rootView: AnyView(root))
         host.sizingOptions = [] // el panel define su tamaño, no el contenido
         panel.contentView = host
         panel.level = parent.level
@@ -103,7 +103,7 @@ final class SearchPanelController {
     func closeImmediately(reason: String = "") {
         guard isShown else { return }
         #if DEBUG
-        print("[Riff] Panel de búsqueda cerrado por: \(reason)")
+        print("[Knob] Panel de búsqueda cerrado por: \(reason)")
         #endif
         isShown = false
         hideWork?.cancel()
@@ -233,7 +233,11 @@ private final class FloatingPanel: NSPanel {
 }
 
 /// Acepta el primer clic aunque la ventana no sea key, para que los botones respondan de inmediato.
-private final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+///
+/// No es genérica a propósito: con `FirstMouseHostingView<Content>` (subclase genérica de
+/// `NSHostingView`) el optimizador de Swift 6.2 truena al compilar en Release (EarlyPerfInliner
+/// en el `deinit`). Con `AnyView` fijo la clase deja de ser genérica y compila igual en Debug y Release.
+private final class FirstMouseHostingView: NSHostingView<AnyView> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 

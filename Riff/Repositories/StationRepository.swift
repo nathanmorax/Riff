@@ -13,6 +13,9 @@ import Foundation
 protocol StationRepository {
     /// Estaciones que coinciden con `query` por nombre o por género. Con `query` vacío: las populares.
     func stations(matching query: String) async throws -> [Station]
+
+    /// Avisa que el usuario empezó a escuchar `station`. Es de cortesía: si falla, no pasa nada.
+    func registerPlay(of station: Station) async
 }
 
 // MARK: - radio-browser.info
@@ -103,6 +106,10 @@ struct RadioBrowserStationRepository: StationRepository {
     }
 
     /// Quita duplicados; primero las del país del usuario, después por popularidad; recorta a `limit`.
+    func registerPlay(of station: Station) async {
+        try? await api.registerClick(stationID: station.stationUUID)
+    }
+
     static func ranked(_ stations: [Station], regionCode: String?, limit: Int) -> [Station] {
         var seen = Set<String>()
         let unique = playable(stations).filter { seen.insert($0.id).inserted }

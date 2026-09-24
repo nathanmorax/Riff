@@ -349,7 +349,7 @@ struct PlayerView: View {
 
     /// Botón invisible que solo existe para el atajo ⌘Q.
     private var quitShortcut: some View {
-        Button("Salir de Riff") {
+        Button("Salir de Knob") {
             NSApplication.shared.terminate(nil)
         }
         .keyboardShortcut("q", modifiers: .command)

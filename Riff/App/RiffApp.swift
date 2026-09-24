@@ -16,6 +16,7 @@ struct RiffApp: App {
     @State private var player: PlayerViewModel
     @State private var search: SearchViewModel
     @State private var globe: MenuBarGlobe
+    @State private var nowPlaying: NowPlayingController
 
     init() {
         // Data + Repositories
@@ -23,7 +24,11 @@ struct RiffApp: App {
         let libraryRepository = UserDefaultsLibraryRepository()
 
         // ViewModels
-        let player = PlayerViewModel(audio: AudioStreamPlayer(), library: libraryRepository)
+        let player = PlayerViewModel(
+            audio: AudioStreamPlayer(),
+            library: libraryRepository,
+            stations: stationRepository
+        )
         let search = SearchViewModel(player: player, repository: stationRepository)
 
         // Ícono de la barra: gira solo mientras suena; quieto en pausa o sin estación.
@@ -33,6 +38,9 @@ struct RiffApp: App {
         _player = State(initialValue: player)
         _search = State(initialValue: search)
         _globe = State(initialValue: globe)
+
+        // Teclas de medios (⏯) y "Reproduciendo ahora" del Centro de control.
+        _nowPlaying = State(initialValue: NowPlayingController(player: player))
     }
 
     var body: some Scene {
@@ -41,7 +49,7 @@ struct RiffApp: App {
         } label: {
             Image(nsImage: globe.image)
                 .renderingMode(.template)
-                .accessibilityLabel(Text(verbatim: "Riff"))
+                .accessibilityLabel(Text(verbatim: "Knob"))
         }
         .menuBarExtraStyle(.window)
     }

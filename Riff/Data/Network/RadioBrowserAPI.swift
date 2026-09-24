@@ -14,6 +14,8 @@ struct RadioBrowserAPI {
     /// `all.api` reparte las peticiones entre los servidores espejo, como recomienda la documentación.
     var baseURL = "https://all.api.radio-browser.info"
     var session: URLSession = .shared
+    /// Así nos identifica radio-browser (lo pide su documentación).
+    var userAgent = "Knob/1.0"
 
     /// `GET /json/stations/search` con los filtros dados, ordenado por popularidad y sin estaciones rotas.
     func searchStations(_ filters: [URLQueryItem], limit: Int) async throws -> [Station] {
@@ -33,6 +35,22 @@ struct RadioBrowserAPI {
         ])
     }
 
+    /// `GET /json/url/{uuid}`: cuenta una escucha de la estación. radio-browser lo usa para su
+    /// popularidad (`clickcount`), la misma con la que ordenamos resultados. Solo cuenta una por IP al día.
+    func registerClick(stationID: String) async throws {
+        var components = URLComponents(string: baseURL)
+        components?.path = "/json/url/\(stationID)"
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+
+        _ = try await session.data(for: request) // la respuesta no se usa
+    }
+
     // MARK: Petición
 
     private func get(_ path: String, _ items: [URLQueryItem]) async throws -> [Station] {
@@ -45,7 +63,7 @@ struct RadioBrowserAPI {
         }
 
         var request = URLRequest(url: url)
-        request.setValue("Riff/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
 
         let (data, _) = try await session.data(for: request)
 

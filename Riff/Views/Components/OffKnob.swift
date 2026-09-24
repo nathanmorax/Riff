@@ -46,9 +46,9 @@ struct OffKnob: View {
                 }
             }
             .gesture(turnGesture)
-            .help("Salir de Riff")
+            .help("Salir de Knob")
             .accessibilityElement()
-            .accessibilityLabel("Salir de Riff")
+            .accessibilityLabel("Salir de Knob")
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { turnOff() }
     }

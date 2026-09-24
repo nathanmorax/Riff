@@ -48,9 +48,8 @@ final class TimedMetadataReader: NSObject, AVPlayerItemMetadataOutputPushDelegat
             Task {
                 let value = try? await item.load(.stringValue)
 
-                // Imprime todo lo que llega, aunque no sea un título.
                 #if DEBUG
-                print("[Riff] 🎵 metadata [\(item.identifier?.rawValue ?? "sin identificador")] = \(value ?? "nil")")
+                print("[Knob] 🎵 metadata [\(item.identifier?.rawValue ?? "sin identificador")] = \(value ?? "nil")")
                 #endif
 
                 guard let identifier = item.identifier,

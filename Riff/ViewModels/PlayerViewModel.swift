@@ -35,14 +35,17 @@ final class PlayerViewModel {
 
     @ObservationIgnored private let audio: any AudioStreaming
     @ObservationIgnored private let library: any LibraryRepository
+    /// Opcional: solo se usa para avisarle a radio-browser que se escuchó una estación.
+    @ObservationIgnored private let stations: (any StationRepository)?
 
     // `nonisolated(unsafe)` para poder cancelarlos desde deinit. Solo se escriben en el MainActor.
     @ObservationIgnored nonisolated(unsafe) private var statusTask: Task<Void, Never>?
     @ObservationIgnored nonisolated(unsafe) private var titleTask: Task<Void, Never>?
 
-    init(audio: any AudioStreaming, library: any LibraryRepository) {
+    init(audio: any AudioStreaming, library: any LibraryRepository, stations: (any StationRepository)? = nil) {
         self.audio = audio
         self.library = library
+        self.stations = stations
         self.currentStation = library.lastStation
         self.recents = library.recentStations
 
@@ -80,13 +83,13 @@ final class PlayerViewModel {
     func play(_ station: Station) {
         guard let url = URL(string: station.urlResolved) else {
             #if DEBUG
-            print("[Riff] ❌ URL inválida: \(station.urlResolved)")
+            print("[Knob] ❌ URL inválida: \(station.urlResolved)")
             #endif
             return
         }
 
         #if DEBUG
-        print("[Riff] ▶️ Reproduciendo: \(station.displayName)")
+        print("[Knob] ▶️ Reproduciendo: \(station.displayName)")
         #endif
 
         currentStation = station
@@ -96,6 +99,13 @@ final class PlayerViewModel {
         recents = library.recentStations
 
         audio.play(url: url)
+
+        // Suma la escucha en radio-browser, sin esperar ni bloquear la reproducción.
+        if let stations {
+            Task {
+                await stations.registerPlay(of: station)
+            }
+        }
     }
 
     /// Detiene la reproducción. La estación sigue seleccionada para poder reanudarla.

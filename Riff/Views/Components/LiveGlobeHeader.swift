@@ -70,16 +70,25 @@ private enum GlobeModel {
     static let tilt = -18.0
     static let pulseDuration = 1.6
 
+    /// Capitales de radio de los países con más estaciones y más escucha, repartidas por todo el globo
+    /// (norte y sur, este y oeste) para que la ciudad encendida cambie de lugar en cada vuelta.
     static let cities: [City] = [
-        City(name: String(localized: "Lisboa"), lat: 38.7, lon: -9.1),
-        City(name: String(localized: "Tokio"), lat: 35.7, lon: 139.7),
+        City(name: String(localized: "Nueva York"), lat: 40.7, lon: -74.0),
+        City(name: String(localized: "Los Ángeles"), lat: 34.1, lon: -118.2),
         City(name: String(localized: "Ciudad de México"), lat: 19.4, lon: -99.1),
-        City(name: String(localized: "Berlín"), lat: 52.5, lon: 13.4),
-        City(name: String(localized: "Lagos"), lat: 6.5, lon: 3.4),
-        City(name: String(localized: "Seúl"), lat: 37.6, lon: 127.0),
+        City(name: String(localized: "São Paulo"), lat: -23.6, lon: -46.6),
         City(name: String(localized: "Buenos Aires"), lat: -34.6, lon: -58.4),
         City(name: String(localized: "Londres"), lat: 51.5, lon: -0.1),
-        City(name: String(localized: "Nueva York"), lat: 40.7, lon: -74.0)
+        City(name: String(localized: "París"), lat: 48.9, lon: 2.4),
+        City(name: String(localized: "Berlín"), lat: 52.5, lon: 13.4),
+        City(name: String(localized: "Atenas"), lat: 38.0, lon: 23.7),
+        City(name: String(localized: "Moscú"), lat: 55.8, lon: 37.6),
+        City(name: String(localized: "Johannesburgo"), lat: -26.2, lon: 28.0),
+        City(name: String(localized: "Bombay"), lat: 19.1, lon: 72.9),
+        City(name: String(localized: "Yakarta"), lat: -6.2, lon: 106.8),
+        City(name: String(localized: "Manila"), lat: 14.6, lon: 121.0),
+        City(name: String(localized: "Tokio"), lat: 35.7, lon: 139.7),
+        City(name: String(localized: "Sídney"), lat: -33.9, lon: 151.2)
     ]
 
     /// Retícula de puntos: menos puntos cerca de los polos para que se vea pareja.

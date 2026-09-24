@@ -32,6 +32,15 @@ private final class MockAudio: AudioStreaming {
     func stop() { stopCount += 1 }
 }
 
+/// Repositorio falso: registra qué estaciones se reportaron como escuchadas.
+@MainActor
+private final class MockStations: StationRepository {
+    private(set) var playedIDs: [String] = []
+
+    func stations(matching query: String) async throws -> [Station] { [] }
+    func registerPlay(of station: Station) async { playedIDs.append(station.id) }
+}
+
 @MainActor
 private func makeStation(_ id: String, clicks: Int = 0, country: String? = nil, codec: String? = nil) -> Station {
     Station(stationUUID: id, name: "Radio \(id)", urlResolved: "https://example.com/\(id)",
@@ -113,6 +122,19 @@ final class PlayerViewModelTests: XCTestCase {
         XCTAssertEqual(vm.currentStation?.id, "x")
         XCTAssertEqual(vm.recents.map(\.id), ["x"])
         XCTAssertEqual(audio.playedURLs, [URL(string: "https://example.com/x")!])
+    }
+
+    @MainActor
+    func testPlayReportsListenToStationRepository() async {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        let stations = MockStations()
+        let vm = PlayerViewModel(audio: MockAudio(), library: UserDefaultsLibraryRepository(defaults: defaults), stations: stations)
+
+        vm.play(makeStation("x"))
+        await waitUntil { stations.playedIDs == ["x"] }
+
+        XCTAssertEqual(stations.playedIDs, ["x"])
     }
 
     @MainActor

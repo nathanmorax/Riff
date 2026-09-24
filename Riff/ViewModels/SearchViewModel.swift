@@ -119,7 +119,7 @@ final class SearchViewModel {
             return
         } catch {
             #if DEBUG
-            print("[Riff] ❌ Error de búsqueda: \(error)")
+            print("[Knob] ❌ Error de búsqueda: \(error)")
             #endif
             stations = []
             selection = nil
