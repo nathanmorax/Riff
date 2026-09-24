@@ -26,7 +26,7 @@ struct StationTile: View {
             .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
             .overlay(
             RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
             )
             .accessibilityHidden(true)
     }
@@ -58,7 +58,7 @@ struct StationTile: View {
         image
             .resizable()
             .scaledToFit()
-            .background(Color.white.opacity(0.06))
+            .background(Color.primary.opacity(0.06))
     }
 
     private var monogram: some View {
