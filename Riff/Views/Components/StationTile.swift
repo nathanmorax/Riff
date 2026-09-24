@@ -5,6 +5,7 @@
 //  Created by Satori Tech 341 on 21/09/26.
 //
 import SwiftUI
+import AppKit
 
 // MARK: - Logo de la estación
 
@@ -14,24 +15,50 @@ struct StationTile: View {
     let station: Station
     var size: CGFloat = 36
 
+    #if DEBUG
+    /// Logos ya descargados para `ScreenshotExporter`: ImageRenderer no espera a AsyncImage.
+    static var snapshotImages: [URL: NSImage] = [:]
+    #endif
+
     var body: some View {
+        content
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+            .overlay(
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+            )
+            .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        #if DEBUG
+        if let url = station.faviconURL, let image = Self.snapshotImages[url] {
+            logo(Image(nsImage: image))
+        } else {
+            remoteLogo
+        }
+        #else
+        remoteLogo
+        #endif
+    }
+
+    private var remoteLogo: some View {
         AsyncImage(url: station.faviconURL) { phase in
             if let image = phase.image {
-                image
-                    .resizable()
-                    .scaledToFit()
-                    .background(Color.white.opacity(0.06))
+                logo(image)
             } else {
                 monogram
             }
         }
-        .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
-        )
-        .accessibilityHidden(true)
+    }
+
+    private func logo(_ image: Image) -> some View {
+        image
+            .resizable()
+            .scaledToFit()
+            .background(Color.white.opacity(0.06))
     }
 
     private var monogram: some View {

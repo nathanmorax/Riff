@@ -13,6 +13,8 @@ struct PlayerView: View {
 
     let player: PlayerViewModel
     let search: SearchViewModel
+    /// Solo para exportar capturas (`ScreenshotExporter`): cambia los controles de AppKit por equivalentes de SwiftUI.
+    var isSnapshot = false
 
     @FocusState private var fieldFocused: Bool
     @State private var hoveredRecent: String?
@@ -44,8 +46,13 @@ struct PlayerView: View {
                     search.dismiss()
                 }
         }
-        .background(WindowReader { hostWindow.window = $0 })
-        .background(commandFShortcut)
+        .background {
+            // Piezas de AppKit invisibles; en una captura no hacen falta (y ImageRenderer no las dibuja).
+            if !isSnapshot {
+                WindowReader { hostWindow.window = $0 }
+                commandFShortcut
+            }
+        }
         .onChange(of: search.isPresented) { _, presented in
             if presented {
                 showPanel()
@@ -221,21 +228,35 @@ struct PlayerView: View {
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
 
-            TextField("Buscar estación", text: Binding(
-                get: { search.query },
-                set: { search.query = $0 }
-            ))
-            .textFieldStyle(.plain)
-            .font(.system(size: 13))
-            .focused($fieldFocused)
-            .onSubmit { search.playSelected() }
-            .onKeyPress(.downArrow) {
-                search.moveSelection(by: 1)
-                return .handled
-            }
-            .onKeyPress(.upArrow) {
-                search.moveSelection(by: -1)
-                return .handled
+            if isSnapshot {
+                // ImageRenderer no dibuja controles de AppKit: en las capturas va un texto con el mismo estilo.
+                Group {
+                    if search.query.isEmpty {
+                        Text("Buscar estación")
+                            .foregroundStyle(.tertiary)
+                    } else {
+                        Text(verbatim: search.query)
+                    }
+                }
+                .font(.system(size: 13))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                TextField("Buscar estación", text: Binding(
+                    get: { search.query },
+                    set: { search.query = $0 }
+                ))
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .focused($fieldFocused)
+                .onSubmit { search.playSelected() }
+                .onKeyPress(.downArrow) {
+                    search.moveSelection(by: 1)
+                    return .handled
+                }
+                .onKeyPress(.upArrow) {
+                    search.moveSelection(by: -1)
+                    return .handled
+                }
             }
 
             if search.isPresented && !search.query.isEmpty {

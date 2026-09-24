@@ -12,13 +12,19 @@ struct SearchResultsView: View {
 
     let search: SearchViewModel
     let player: PlayerViewModel
+    /// Solo para exportar capturas: lista fija en lugar de ScrollView (ImageRenderer no dibuja NSScrollView).
+    var isSnapshot = false
 
     @Namespace private var highlight
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            results
+            if isSnapshot {
+                snapshotList
+            } else {
+                results
+            }
             Divider()
             hints
         }
@@ -54,6 +60,24 @@ struct SearchResultsView: View {
         if search.trimmedQuery.isEmpty { return String(localized: "Populares") }
         // Singular/plural por idioma en Localizable.xcstrings ("1 estación", "20 estaciones").
         return String(localized: "\(search.stations.count) estaciones")
+    }
+
+    /// Las primeras filas, sin scroll. Mismo espaciado que `results`.
+    private var snapshotList: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(search.stations.prefix(6)) { station in
+                SearchRow(
+                    station: station,
+                    isSelected: station.id == search.selection,
+                    isPlaying: player.isPlaying && player.currentStation?.id == station.id,
+                    highlight: highlight
+                )
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 6)
+        .padding(.bottom, 8)
+        .clipped()
     }
 
     private var results: some View {

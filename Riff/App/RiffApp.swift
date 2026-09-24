@@ -41,6 +41,11 @@ struct RiffApp: App {
 
         // Teclas de medios (⏯) y "Reproduciendo ahora" del Centro de control.
         _nowPlaying = State(initialValue: NowPlayingController(player: player))
+
+        #if DEBUG
+        // Capturas para la App Store en alta resolución: argumento de arranque `-exportScreenshots`.
+        ScreenshotExporter.runIfRequested(player: player, repository: stationRepository)
+        #endif
     }
 
     var body: some Scene {
