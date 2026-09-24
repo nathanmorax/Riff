@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Solo usa el cifrado estándar del sistema (HTTPS). App Store Connect ya no pregunta en cada build. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- Muchas radios transmiten por http://. Esto permite reproducirlas con AVFoundation
+	     sin abrir http para el resto de las peticiones (la API y los favicons siguen en https). -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoadsForMedia</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,18 @@
+# Xcode: estado personal de cada usuario (ventanas abiertas, breakpoints, esquemas propios).
+# No es parte del proyecto y cambia cada vez que abres Xcode.
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Builds
+build/
+DerivedData/
+*.xcarchive
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
